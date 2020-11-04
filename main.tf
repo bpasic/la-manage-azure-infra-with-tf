@@ -141,11 +141,6 @@ resource "azurerm_public_ip" "fe-vm-pip" {
   allocation_method   = "Dynamic"
 }
 
-data "azurerm_public_ip" "fe-vm-pip" {
-  name                = azurerm_public_ip.fe-vm-pip.name
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
 resource "azurerm_windows_virtual_machine" "fe-vm" {
   name                = "fe-vm"
   resource_group_name = azurerm_resource_group.rg.name
@@ -168,4 +163,42 @@ resource "azurerm_windows_virtual_machine" "fe-vm" {
     sku       = "2019-Datacenter"
     version   = "latest"
   }
+}
+
+## App Service
+
+resource "azurerm_app_service_plan" "asp" {
+  name                = "app-plan"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  sku {
+    tier = "Free"
+    size = "F1"
+  }
+}
+
+resource "azurerm_app_service" "appservice" {
+  name                = "bptestweb"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  app_service_plan_id = azurerm_app_service_plan.asp.id
+}
+
+## Azure SQL Database
+
+resource "azurerm_mssql_server" "sqlserver" {
+  name                         = "bptestsqlsrv"
+  resource_group_name          = azurerm_resource_group.rg.name
+  location                     = azurerm_resource_group.rg.location
+  version                      = "12.0"
+  administrator_login          = var.administrator_login
+  administrator_login_password = var.administrator_login_password
+}
+
+resource "azurerm_mssql_database" "sqldatabase" {
+  name      = "bpsqltestdb"
+  server_id = azurerm_mssql_server.sqlserver.id
+  collation = "SQL_Latin1_General_CP1_CI_AS"
+  sku_name  = "Basic"
 }
